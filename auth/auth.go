@@ -87,8 +87,14 @@ func Login(userId string, fromHttp bool, developmentMode bool) (tokenString stri
 	return tokenString, xsrfToken, err
 }
 
-func Logout(session *sessions.Session) {
-	session.Options.MaxAge = -1
+func Logout(session *sessions.Session, developmentMode bool) string {
+	// create a new token with an unauthenticated user
+	if tokenString, xsrfToken, err := Login("", true, developmentMode); err != nil {
+		return ""
+	} else {
+		session.Values["token"] = tokenString
+		return xsrfToken
+	}
 }
 
 func caculateXSRFHash(xsrfToken string) (string, error) {
@@ -181,7 +187,7 @@ func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session
 	// any non-get operation requires checking XSRF protection
 	if r.Method != "GET" {
 		// ensure the CSRF protection token is included with the request and matches the value pulled
-		// from the jwt
+		// from the jwt.  only check for CSRF if user is logged in
 		if !validateCSRFToken(r.FormValue("xsrf-token"), tokenData.XsrfToken) {
 			return session, "", "", "", errors.New("access denied.")
 		}

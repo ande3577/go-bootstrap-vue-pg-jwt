@@ -27,9 +27,13 @@ func (h jsonHandlerWithContext) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := h(w, r, context); err != nil {
+	buf := &httpbuf.Buffer{}
+
+	if err := h(buf, r, context); err != nil {
 		writeError(w, err)
 	}
+
+	buf.Apply(w)
 }
 
 func (h handlerWithContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +48,7 @@ func (h handlerWithContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = h(buf, r, c)
 	if err != nil {
 		writeError(w, err)
+		return
 	}
 
 	if c.Session != nil {
@@ -97,6 +102,9 @@ func SetupApplication(s *app.ApplicationSettings) chan int {
 func Initialize(root string) {
 	r := mux.NewRouter()
 	r.Handle("/", handlerWithContext(Index)).Methods("GET")
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir(filepath.Join(root, "static"))))
+	r.Handle("/login", handlerWithContext(PostLogin)).Methods("POST")
+	r.Handle("/logout", handlerWithContext(PostLogout)).Methods("POST")
+
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(filepath.Join(root, "static")))).Methods("GET")
 	http.Handle("/", r)
 }

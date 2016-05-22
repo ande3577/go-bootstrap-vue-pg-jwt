@@ -28,14 +28,13 @@
 	  			</ul>
 				<ul class="nav navbar-nav navbar-right">
 					{{ if .Context.User }}
-						<li class="nav navbar-right"><a href="#" id="user-name" class="user-name">{{ .Context.User.Login }}</a></li>
-						<li class="nav navbar-right">
-							<form action="/logout" method="post">
-								<button class="btn btn-link" type="submit" type="submit" id="submit">Logout</button>
-							</form>
-						</li>
+						<form class="inline" action="/logout" method="POST">				
+							<span id="current-user">{{ .Context.User }}</span>
+							<input type="hidden" name="xsrf-token" value="{{.Context.XSRFToken}}"/>
+							<button class="btn btn-link">Logout</button>
+						</form>	
 					{{ else }}
-						<form method="POST" class="form-inline">
+						<form method="POST" class="form-inline" action="/login" >
 							<div class="form-group" />
 								<label for="user-id">User ID</label>
 								<input class="form-control" type="text" name="user_id" placeholder="Enter User ID" id="user_id" >
@@ -44,6 +43,7 @@
 							<div class="form-group" />
 								<label for="password">Password</label>
 								<input class="form-control" type="password" name="password" placeholder="Enter Password" id="password" >
+								<input type="hidden" name="xsrf-token" value="{{.Context.XSRFToken}}"/>
 							</div>
 							<button type="submit" class="btn-link">Login</button>
 							<a href="/register" class="btn-link">Register</a>
@@ -56,9 +56,11 @@
 
 		{{ template "breadcrumbs" .}}
 
-		{{ if .ErrorMsg }}	
-			<div id="error-message" class="alert alert-danger">
-			<p>{{ .ErrorMsg }}</p>
+		{{range .Context.Session.Flashes}}
+			<div id="failure-message" class="alert alert-danger" role="alert">
+				<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+				<span class="sr-only">Error:</span>
+				<span>{{ . }}</span>
 			</div>
 		{{ end }}
 
