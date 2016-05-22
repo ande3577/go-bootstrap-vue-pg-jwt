@@ -1,0 +1,17 @@
+{{ define "title" }}{{ end }}
+
+{{define "additional_css"}}{{ end }}
+
+{{ define "breadcrumbs" }}{{ end }}
+
+{{ define "content" }}
+
+{{ if .Context.User }}
+	<p>Welcome text for authenticated user.</p>
+{{ else }}
+	<p>Welcome text for unauthenticated user.</p>
+{{ end }}
+
+{{ end }}
+
+{{ define "additional_js" }}{{ end }}

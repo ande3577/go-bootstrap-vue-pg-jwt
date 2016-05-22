@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Go Template {{template "title" .}}</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+		<!-- Optional theme -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+
+		{{template "additional_css" .}}
+	</head>
+	<body>
+
+		<nav class="navbar navbar-default">
+			<div class="container-fluid">
+		  		<ul class="nav navbar-nav navbar-left">
+		  			<li><a class="navbar-brand" href="/">Go Template</a></li>
+		  			<span class="icon-bar"></span>
+	        		<span class="icon-bar"></span>
+	        		<span class="icon-bar"></span>
+	  			</ul>
+				<ul class="nav navbar-nav navbar-right">
+					{{ if .Context.User }}
+						<li class="nav navbar-right"><a href="#" id="user-name" class="user-name">{{ .Context.User.Login }}</a></li>
+						<li class="nav navbar-right">
+							<form action="/logout" method="post">
+								<button class="btn btn-link" type="submit" type="submit" id="submit">Logout</button>
+							</form>
+						</li>
+					{{ else }}
+						<form method="POST" class="form-inline">
+							<div class="form-group" />
+								<label for="user-id">User ID</label>
+								<input class="form-control" type="text" name="user_id" placeholder="Enter User ID" id="user_id" >
+							</div>
+
+							<div class="form-group" />
+								<label for="password">Password</label>
+								<input class="form-control" type="password" name="password" placeholder="Enter Password" id="password" >
+							</div>
+							<button type="submit" class="btn-link">Login</button>
+							<a href="/register" class="btn-link">Register</a>
+						</form>
+
+					{{ end }}
+				</ul>
+			</div>
+		</nav>
+
+		{{ template "breadcrumbs" .}}
+
+		{{ if .ErrorMsg }}	
+			<div id="error-message" class="alert alert-danger">
+			<p>{{ .ErrorMsg }}</p>
+			</div>
+		{{ end }}
+
+		<div id="content" class="container-fluid">
+			{{template "content" .}}
+		</div>
+
+		<div id="footer">
+			Go powered.  &copy; 2016 David S Anderson
+		</div>
+
+		{{template "additional_js" .}}
+	</body>
+</html>
+

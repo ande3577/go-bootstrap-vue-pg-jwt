@@ -18,6 +18,8 @@ go get github.com/onsi/ginkgo/ginkgo
 go get github.com/onsi/gomega
 go get github.com/sclevine/agouti
 go get gopkg.in/gorp.v1
+go get github.com/dgrijalva/jwt-go
+go get github.com/kardianos/osext
 
 To update dependencies:
 
@@ -31,3 +33,43 @@ go get -u github.com/onsi/ginkgo/ginkgo
 go get -u github.com/onsi/gomega
 go get -u github.com/sclevine/agouti
 go get -u gopkg.in/gorp.v1
+go get -u github.com/dgrijalva/jwt-go
+go get -u github.com/kardianos/osext
+
+The following are needed to run tests:
+
+go get github.com/onsi/ginkgo/ginkgo
+go get github.com/onsi/gomega
+go get github.com/sclevine/agouti
+
+To update:
+
+go get -u github.com/onsi/ginkgo/ginkgo
+go get -u github.com/onsi/gomega
+go get -u github.com/sclevine/agouti
+
+== Setting up secure keys ==
+
+Generate the secure keys as follows.
+
+1.  Install pwgen
+
+sudo apt-get install pwgen
+
+2.  Generate the keys for the cookie store
+
+  i.   Generate an authentication key
+         pwgen -s 64 -1 -n
+  ii.  Add the result of the above command to ~/.bashrc (or platform equivalent) (replace example passkey with output of 2.i.)
+         export GO_TEMPLATE_COOKIE_STORE_AUTHENTICATION_KEY=r4njzugGZk1esyzXT9CtqW5rYJaNex7J0EQtjfgM6wlwXr9kNio4hp9XjZiYeamr
+  iii. Generate an encryption key
+         pwgen -s 32 -1 -n
+  iv.  Add the result of the above command to ~/.bashrc (or platform equivalent) (replace example passkey with output of 2.i.)
+         export GO_TEMPLATE_COOKIE_STORE_ENCRYPTION_KEY=r4njzugGZk1esyzXT9CtqW5rYJaNex7J0EQtjfgM6wlwXr9kNio4hp9XjZiYeamr
+
+3.  Generate JWT a JWT signing key
+
+  i.   generate the key
+         pwgen -s 32 -1 -n
+  ii.  add the result of the above command ~/.bashrc (or platform equivalent) (replace example passkey with output of 2.i.)
+         export GO_TEMPLATE_JWT_KEY=sQyYUSy52odvX5Qdxt5SV1RsjuXEw7nm        
