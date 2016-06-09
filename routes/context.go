@@ -25,11 +25,11 @@ func NewContext(r *http.Request) (c *Context, err error) {
 }
 
 func NewContextFromJson(r *http.Request) (c *Context, err error) {
-	userIdString, _, xsrfToken, err := auth.AuthorizeJSON(r, settings.DevelopmentMode)
+	tokenData, err := auth.AuthorizeJSON(r, settings.DevelopmentMode)
 
 	return &Context{
-		User:            userIdString,
-		XSRFToken:       xsrfToken,
+		User:            tokenData.UserId,
+		XSRFToken:       tokenData.XsrfToken,
 		DevelopmentMode: settings.DevelopmentMode,
 	}, err
 }

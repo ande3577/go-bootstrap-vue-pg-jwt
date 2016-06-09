@@ -220,12 +220,13 @@ func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session
 	return session, tokenData, err
 }
 
-func AuthorizeJSON(r *http.Request, developmentMode bool) (userId string, tokenString string, xsrfToken string, err error) {
+func AuthorizeJSON(r *http.Request, developmentMode bool) (tokenData *TokenData, err error) {
 
 	fromSession := false
 
 	// first look for a token in the secure session store
 	session, err := sessionStore.Get(r, cookieIssuerVar)
+	var tokenString string
 	if err == nil {
 		tokenStringInterface := session.Values["token"]
 		if tokenStringInterface != nil {
@@ -239,7 +240,7 @@ func AuthorizeJSON(r *http.Request, developmentMode bool) (userId string, tokenS
 		tokenString = r.FormValue("auth-token")
 	}
 
-	tokenData, err := parseToken(tokenString, developmentMode)
+	tokenData, err = parseToken(tokenString, developmentMode)
 
 	// if the token has been obtained from a session, ensure it was created from an http
 	// request.  If it is included as a form value, make sure it was generated from an API
@@ -247,15 +248,15 @@ func AuthorizeJSON(r *http.Request, developmentMode bool) (userId string, tokenS
 	//
 	// Any mismatch will be treated as an invalid token
 	if tokenData.FromHttp != fromSession {
-		return "", "", "", errors.New("access denied - token http doesn't match.")
+		return &TokenData{}, errors.New("access denied - token http doesn't match.")
 	}
 
 	// xsrf protection is only required if the token was obtained from the browser session
 	// if the user allows their jwt token to be stolen otherwise, they are on their own
 	// ensure that the xsrf token in included with the request header
 	if fromSession && !validateCSRFToken(r.Header.Get("X-XSRF-TOKEN"), tokenData.XsrfToken) {
-		return "", "", "", errors.New("access denied - csrf.")
+		return &TokenData{}, errors.New("access denied - csrf.")
 	}
 
-	return tokenData.UserId, tokenData.TokenString, tokenData.XsrfToken, err
+	return tokenData, err
 }
