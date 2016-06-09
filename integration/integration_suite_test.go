@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 	"github.com/sclevine/agouti"
 	. "github.com/sclevine/agouti/matchers"
 	"testing"
@@ -100,3 +101,7 @@ var _ = AfterSuite(func() {
 		Expect(agoutiDriver.Stop()).To(Succeed())
 	}
 })
+
+func HaveValue(expected string) types.GomegaMatcher {
+	return HaveAttribute("value", expected)
+}
