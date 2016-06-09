@@ -68,7 +68,7 @@ func CompareHashAndPassword(password string, hashedPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
-func Login(userId string, fromHttp bool, developmentMode bool) (tokenString string, xsrfToken string, err error) {
+func Login(userId string, fromHttp bool, developmentMode bool) (tokenData *TokenData, err error) {
 	// Create the token
 	token := jwt.New(jwt.SigningMethodHS256)
 	// Set some claims
@@ -78,8 +78,10 @@ func Login(userId string, fromHttp bool, developmentMode bool) (tokenString stri
 	token.Claims["iss"] = cookieIssuerVar
 	token.Claims["iat"] = issuedTime.Unix()
 	token.Claims["exp"] = issuedTime.Add(time.Hour * 72).Unix()
+
+	var xsrfToken string
 	if xsrfToken, err = generateXSRFHeader(); err != nil {
-		return "", "", err
+		return tokenData, err
 	}
 
 	token.Claims["xsrftoken"] = xsrfToken
@@ -89,24 +91,29 @@ func Login(userId string, fromHttp bool, developmentMode bool) (tokenString stri
 		token.Claims["development_mode"] = true
 	}
 
+	var tokenString string
 	if tokenString, err = token.SignedString(jwtSigningKey); err != nil {
-		return "", "", err
+		return tokenData, err
 	}
 
 	if xsrfToken, err = caculateXSRFHash(xsrfToken); err != nil {
-		return "", "", err
+		return tokenData, err
 	}
 
-	return tokenString, xsrfToken, err
+	return &TokenData{FromHttp: fromHttp,
+			TokenString: tokenString,
+			XsrfToken:   xsrfToken,
+			UserId:      userId},
+		err
 }
 
 func Logout(session *sessions.Session, developmentMode bool) string {
 	// create a new token with an unauthenticated user
-	if tokenString, xsrfToken, err := Login("", true, developmentMode); err != nil {
+	if tokenData, err := Login("", true, developmentMode); err != nil {
 		return ""
 	} else {
-		session.Values["token"] = tokenString
-		return xsrfToken
+		session.Values["token"] = tokenData.TokenString
+		return tokenData.XsrfToken
 	}
 }
 
@@ -171,7 +178,7 @@ func validateCSRFToken(receiveToken, jwtToken string) bool {
 	}
 }
 
-func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session, userId string, tokenString string, xsrfToken string, err error) {
+func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session, tokenData *TokenData, err error) {
 	if session, err = sessionStore.Get(r, cookieIssuerVar); err != nil {
 		session, _ = sessionStore.New(r, cookieIssuerVar)
 	}
@@ -179,26 +186,26 @@ func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session
 	// set the session to httponly
 	session.Options.HttpOnly = true
 
+	var tokenString string
 	tokenStringInterface := session.Values["token"]
 	if tokenStringInterface != nil {
 		tokenString = tokenStringInterface.(string)
 	} else {
 		// if there is no token present in the cookie, create a new token with an unauthenticated user
-		if tokenString, xsrfToken, err = Login("", true, developmentMode); err != nil {
-			return session, "", "", "", err
+		if tokenData, err = Login("", true, developmentMode); err != nil {
+			return session, &TokenData{}, err
 		}
 		session.Values["token"] = tokenString
 	}
 
-	tokenData, err := parseToken(tokenString, developmentMode)
-	if err != nil {
+	if tokenData, err = parseToken(tokenString, developmentMode); err != nil {
 		xsrfToken := Logout(session, developmentMode)
-		return session, "", "", xsrfToken, nil
+		return session, &TokenData{XsrfToken: xsrfToken}, nil
 	}
 
 	// require this token to have been generated via an http request, otherwise deny access
 	if !tokenData.FromHttp {
-		return session, "", "", "", errors.New("access denied - not from http.")
+		return session, &TokenData{}, errors.New("access denied - not from http.")
 	}
 
 	// any non-get operation requires checking XSRF protection
@@ -206,11 +213,11 @@ func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session
 		// ensure the CSRF protection token is included with the request and matches the value pulled
 		// from the jwt.  only check for CSRF if user is logged in
 		if !validateCSRFToken(r.FormValue("xsrf-token"), tokenData.XsrfToken) {
-			return session, "", "", "", errors.New("access denied - csrf.")
+			return session, &TokenData{}, errors.New("access denied - csrf.")
 		}
 	}
 
-	return session, tokenData.UserId, tokenData.TokenString, tokenData.XsrfToken, err
+	return session, tokenData, err
 }
 
 func AuthorizeJSON(r *http.Request, developmentMode bool) (userId string, tokenString string, xsrfToken string, err error) {

@@ -14,12 +14,12 @@ type Context struct {
 }
 
 func NewContext(r *http.Request) (c *Context, err error) {
-	s, userId, _, xsrfToken, err := auth.Authorize(r, settings.DevelopmentMode)
+	s, tokenData, err := auth.Authorize(r, settings.DevelopmentMode)
 
 	return &Context{
 		Session:         s,
-		User:            userId,
-		XSRFToken:       xsrfToken,
+		User:            tokenData.UserId,
+		XSRFToken:       tokenData.XsrfToken,
 		DevelopmentMode: settings.DevelopmentMode,
 	}, err
 }

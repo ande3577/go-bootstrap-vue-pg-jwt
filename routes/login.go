@@ -16,8 +16,8 @@ func logout(c *Context) {
 }
 
 func login(c *Context) error {
-	if tokenString, _, err := auth.Login(c.User, true, settings.DevelopmentMode); err == nil {
-		c.Session.Values["token"] = tokenString
+	if tokenData, err := auth.Login(c.User, true, settings.DevelopmentMode); err == nil {
+		c.Session.Values["token"] = tokenData.TokenString
 	} else {
 		return err
 	}
