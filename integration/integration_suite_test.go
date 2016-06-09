@@ -17,6 +17,7 @@ var queryOverridePartNumber string
 var queryOverrideVersion string
 
 var skipIntegration = flag.Bool("skip-integration", false, "skip all integration tests")
+var leaveBrowserOpen = flag.Bool("leave-browser-open", false, "leave browser open after integration tests")
 
 func TestIntegration(t *testing.T) {
 	if *skipIntegration {
@@ -92,8 +93,10 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	if page != nil {
-		Expect(page.Destroy()).To(Succeed())
+	if !*leaveBrowserOpen {
+		if page != nil {
+			Expect(page.Destroy()).To(Succeed())
+		}
+		Expect(agoutiDriver.Stop()).To(Succeed())
 	}
-	Expect(agoutiDriver.Stop()).To(Succeed())
 })

@@ -1,22 +1,26 @@
 package support
 
 import (
+	"github.com/ande3577/go-bootstrap-vue-pg-jwt/auth"
+	"github.com/ande3577/go-bootstrap-vue-pg-jwt/model"
+
 	"errors"
 )
 
-func Login(userId string, password string) error {
-	if len(userId) == 0 {
-		return errors.New("user name cannot be blank")
+func Login(login string, password string, u model.UserInterface) (loginOut string, err error) {
+	if len(login) == 0 {
+		return "", errors.New("user name cannot be blank")
 	}
 
 	if len(password) == 0 {
-		return errors.New("password cannot be blank")
+		return "", errors.New("password cannot be blank")
 	}
 
-	// to get framework in place, just check for userId == password
-	if userId != password {
-		return errors.New("incorrect password")
+	loginOut, passwordHash := u.GetUserIdPasswordHashByLogin(login)
+
+	if auth.CompareHashAndPassword(password, passwordHash) != nil {
+		return "", errors.New("incorrect username or password")
 	}
 
-	return nil
+	return loginOut, nil
 }

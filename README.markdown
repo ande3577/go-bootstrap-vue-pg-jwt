@@ -2,9 +2,11 @@
 
 Using bootstrap, vue.js, gorp (postgres), and jsontokens for auth.
 
-# Dependencies
+# Installation
 
 Install go 1.6.2 or later
+
+## Dependencies
 
 Install following depdendences:
 
@@ -73,3 +75,22 @@ sudo apt-get install pwgen
          pwgen -s 32 -1 -n
   ii.  add the result of the above command ~/.bashrc (or platform equivalent) (replace example passkey with output of 2.i.)
          export GO_TEMPLATE_JWT_KEY=sQyYUSy52odvX5Qdxt5SV1RsjuXEw7nm        
+
+== Setting up the database ==
+
+1.  Launch the postgres command line
+    psql -U postgres -W
+2.  Create the database
+    CREATE DATABASE gotemplate;
+  i. Repeat for developement and test databases as needed.
+3.  Create the user:
+    CREATE USER gotemplate WITH PASSWORD 'password';
+4.  Grant the new user access to the database:
+    GRANT ALL PRIVILEGES ON DATABASE gotemplate TO gotemplate;
+  i.  Repeat for development and test databases as needed.
+5.  Exit postgres
+    \q
+6.  Run the goose migrations
+    goose up -env production
+  i.  Repeat for development and test databases as needed
+

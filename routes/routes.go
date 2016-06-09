@@ -1,8 +1,10 @@
 package routes
 
 import (
-	"fmt"
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/app"
+	"github.com/ande3577/go-bootstrap-vue-pg-jwt/model"
+
+	"fmt"
 	"github.com/goods/httpbuf"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -90,6 +92,12 @@ func SetupApplication(s *app.ApplicationSettings) chan int {
 
 	Initialize(settings.RootDirectory)
 
+	db, err := app.OpenDB(settings)
+	if err != nil {
+		panic(err)
+	}
+	model.Initialize(db)
+
 	serverChannel := make(chan int) // Allocate a channel.
 	go func() {
 		http.ListenAndServe(":"+settings.Port, nil)
@@ -104,6 +112,8 @@ func Initialize(root string) {
 	r.Handle("/", handlerWithContext(Index)).Methods("GET")
 	r.Handle("/login", handlerWithContext(PostLogin)).Methods("POST")
 	r.Handle("/logout", handlerWithContext(PostLogout)).Methods("POST")
+	r.Handle("/register", handlerWithContext(GetRegister)).Methods("GET")
+	r.Handle("/register", handlerWithContext(PostRegister)).Methods("POST")
 
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir(filepath.Join(root, "static")))).Methods("GET")
 	http.Handle("/", r)

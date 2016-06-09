@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/sessions"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"time"
 )
@@ -53,6 +54,18 @@ func GenerateRandomString(length int) (string, error) {
 
 func generateXSRFHeader() (string, error) {
 	return GenerateRandomString(32)
+}
+
+func GenerateHashFromPassword(password string) string {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	return string(hashedPassword)
+}
+
+func CompareHashAndPassword(password string, hashedPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
 func Login(userId string, fromHttp bool, developmentMode bool) (tokenString string, xsrfToken string, err error) {
@@ -126,7 +139,7 @@ func parseToken(tokenString string, developmentMode bool) (tokenData *TokenData,
 	})
 
 	if !developmentMode && getDevelopmentModeFromToken(token) {
-		return nil, fmt.Errorf("access denied")
+		return nil, fmt.Errorf("access denied - cookie mismatch")
 	}
 
 	if err == nil && token.Valid {
@@ -178,10 +191,14 @@ func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session
 	}
 
 	tokenData, err := parseToken(tokenString, developmentMode)
+	if err != nil {
+		xsrfToken := Logout(session, developmentMode)
+		return session, "", "", xsrfToken, nil
+	}
 
 	// require this token to have been generated via an http request, otherwise deny access
 	if !tokenData.FromHttp {
-		return session, "", "", "", errors.New("access denied.")
+		return session, "", "", "", errors.New("access denied - not from http.")
 	}
 
 	// any non-get operation requires checking XSRF protection
@@ -189,7 +206,7 @@ func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session
 		// ensure the CSRF protection token is included with the request and matches the value pulled
 		// from the jwt.  only check for CSRF if user is logged in
 		if !validateCSRFToken(r.FormValue("xsrf-token"), tokenData.XsrfToken) {
-			return session, "", "", "", errors.New("access denied.")
+			return session, "", "", "", errors.New("access denied - csrf.")
 		}
 	}
 
@@ -223,14 +240,14 @@ func AuthorizeJSON(r *http.Request, developmentMode bool) (userId string, tokenS
 	//
 	// Any mismatch will be treated as an invalid token
 	if tokenData.FromHttp != fromSession {
-		return "", "", "", errors.New("access denied.")
+		return "", "", "", errors.New("access denied - token http doesn't match.")
 	}
 
 	// xsrf protection is only required if the token was obtained from the browser session
 	// if the user allows their jwt token to be stolen otherwise, they are on their own
 	// ensure that the xsrf token in included with the request header
 	if fromSession && !validateCSRFToken(r.Header.Get("X-XSRF-TOKEN"), tokenData.XsrfToken) {
-		return "", "", "", errors.New("access denied.")
+		return "", "", "", errors.New("access denied - csrf.")
 	}
 
 	return tokenData.UserId, tokenData.TokenString, tokenData.XsrfToken, err

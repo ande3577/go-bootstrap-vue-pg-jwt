@@ -1,3 +1,9 @@
+production:
+    driver: postgres
+    open: user=gotemplate password=gotemplate dbname=gotemplate sslmode=disable
 development:
     driver: postgres
-    open: user=postgres dbname=gotemplate sslmode=disable
+    open: user=gotemplate password=gotemplate dbname=gotemplate_dev sslmode=disable
+test:
+    driver: postgres
+    open: user=gotemplate password=gotemplate dbname=gotemplate_test sslmode=disable
