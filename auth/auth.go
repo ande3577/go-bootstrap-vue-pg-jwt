@@ -135,7 +135,7 @@ func getDevelopmentModeFromToken(token *jwt.Token) bool {
 	return developmentModeInterface.(bool)
 }
 
-func parseToken(tokenString string, developmentMode bool) (tokenData *TokenData, err error) {
+func ParseToken(tokenString string, fromHttp bool, developmentMode bool) (tokenData *TokenData, err error) {
 	tokenData = &TokenData{TokenString: tokenString}
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
@@ -144,6 +144,10 @@ func parseToken(tokenString string, developmentMode bool) (tokenData *TokenData,
 		}
 		return lookupTokenSigningKey(token.Header["kid"]), nil
 	})
+
+	if err != nil {
+		return &TokenData{}, err
+	}
 
 	if !developmentMode && getDevelopmentModeFromToken(token) {
 		return nil, fmt.Errorf("access denied - cookie mismatch")
@@ -160,6 +164,9 @@ func parseToken(tokenString string, developmentMode bool) (tokenData *TokenData,
 		}
 		if fromHttpInterface := token.Claims["from_http"]; fromHttpInterface != nil {
 			tokenData.FromHttp = fromHttpInterface.(bool)
+			if tokenData.FromHttp != fromHttp {
+				return &TokenData{}, errors.New("access denied - cookie http mismatch")
+			}
 		}
 	} else {
 		return &TokenData{}, err
@@ -198,14 +205,9 @@ func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session
 		session.Values["token"] = tokenString
 	}
 
-	if tokenData, err = parseToken(tokenString, developmentMode); err != nil {
+	if tokenData, err = ParseToken(tokenString, true, developmentMode); err != nil {
 		xsrfToken := Logout(session, developmentMode)
 		return session, &TokenData{XsrfToken: xsrfToken}, nil
-	}
-
-	// require this token to have been generated via an http request, otherwise deny access
-	if !tokenData.FromHttp {
-		return session, &TokenData{}, errors.New("access denied - not from http.")
 	}
 
 	// any non-get operation requires checking XSRF protection
@@ -240,16 +242,7 @@ func AuthorizeJSON(r *http.Request, developmentMode bool) (tokenData *TokenData,
 		tokenString = r.FormValue("auth-token")
 	}
 
-	tokenData, err = parseToken(tokenString, developmentMode)
-
-	// if the token has been obtained from a session, ensure it was created from an http
-	// request.  If it is included as a form value, make sure it was generated from an API
-	// request.
-	//
-	// Any mismatch will be treated as an invalid token
-	if tokenData.FromHttp != fromSession {
-		return &TokenData{}, errors.New("access denied - token http doesn't match.")
-	}
+	tokenData, err = ParseToken(tokenString, fromSession, developmentMode)
 
 	// xsrf protection is only required if the token was obtained from the browser session
 	// if the user allows their jwt token to be stolen otherwise, they are on their own
