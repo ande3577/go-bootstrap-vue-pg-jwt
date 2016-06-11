@@ -17,10 +17,11 @@ var jwtSigningKey []byte
 var cookieIssuerVar string
 
 type TokenData struct {
-	UserId      string
-	TokenString string
-	XsrfToken   string
-	FromHttp    bool
+	UserId            string
+	TokenString       string
+	XsrfToken         string
+	FromHttp          bool
+	SessionIdentifier string
 }
 
 func lookupTokenSigningKey(kid interface{}) []byte {
@@ -68,6 +69,18 @@ func CompareHashAndPassword(password string, hashedPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
+func createSessionIdentifier(userId string) (string, error) {
+	if len(userId) > 0 {
+		if sessionIdentifier, err := GenerateRandomString(40); err != nil {
+			return "", err
+		} else {
+			return sessionIdentifier, nil
+		}
+	} else {
+		return "", nil
+	}
+}
+
 func Login(userId string, fromHttp bool, developmentMode bool) (tokenData *TokenData, err error) {
 	// Create the token
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -78,6 +91,12 @@ func Login(userId string, fromHttp bool, developmentMode bool) (tokenData *Token
 	token.Claims["iss"] = cookieIssuerVar
 	token.Claims["iat"] = issuedTime.Unix()
 	token.Claims["exp"] = issuedTime.Add(time.Hour * 72).Unix()
+
+	sessionIdentifier, err := createSessionIdentifier(userId)
+	if err != nil {
+		return tokenData, err
+	}
+	token.Claims["session_id"] = sessionIdentifier
 
 	var xsrfToken string
 	if xsrfToken, err = generateXSRFHeader(); err != nil {
@@ -101,19 +120,20 @@ func Login(userId string, fromHttp bool, developmentMode bool) (tokenData *Token
 	}
 
 	return &TokenData{FromHttp: fromHttp,
-			TokenString: tokenString,
-			XsrfToken:   xsrfToken,
-			UserId:      userId},
+			TokenString:       tokenString,
+			XsrfToken:         xsrfToken,
+			UserId:            userId,
+			SessionIdentifier: sessionIdentifier},
 		err
 }
 
-func Logout(session *sessions.Session, developmentMode bool) string {
+func Logout(session *sessions.Session, developmentMode bool) (originalTokenData *TokenData) {
 	// create a new token with an unauthenticated user
 	if tokenData, err := Login("", true, developmentMode); err != nil {
-		return ""
+		return &TokenData{}
 	} else {
 		session.Values["token"] = tokenData.TokenString
-		return tokenData.XsrfToken
+		return tokenData
 	}
 }
 
@@ -168,6 +188,9 @@ func ParseToken(tokenString string, fromHttp bool, developmentMode bool) (tokenD
 				return &TokenData{}, errors.New("access denied - cookie http mismatch")
 			}
 		}
+		if sessionIdentifierInterface := token.Claims["session_id"]; sessionIdentifierInterface != nil {
+			tokenData.SessionIdentifier = sessionIdentifierInterface.(string)
+		}
 	} else {
 		return &TokenData{}, err
 	}
@@ -206,8 +229,8 @@ func Authorize(r *http.Request, developmentMode bool) (session *sessions.Session
 	}
 
 	if tokenData, err = ParseToken(tokenString, true, developmentMode); err != nil {
-		xsrfToken := Logout(session, developmentMode)
-		return session, &TokenData{XsrfToken: xsrfToken}, nil
+		tokenData := Logout(session, developmentMode)
+		return session, tokenData, nil
 	}
 
 	// any non-get operation requires checking XSRF protection

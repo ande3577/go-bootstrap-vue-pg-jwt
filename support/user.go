@@ -7,7 +7,7 @@ import (
 	"errors"
 )
 
-func CreateUser(user model.UserInterface, password string, passwordConfirmation string) error {
+func CreateUser(user model.UserInterface, session model.SessionInterface, password string, passwordConfirmation string) error {
 	u := user.Get()
 
 	if len(u.Login) == 0 {
@@ -28,5 +28,12 @@ func CreateUser(user model.UserInterface, password string, passwordConfirmation 
 
 	u.HashedPassword = auth.GenerateHashFromPassword(password)
 
-	return user.Create()
+	if err := user.Create(); err != nil {
+		return err
+	}
+
+	s := session.Get()
+
+	s.UserId = u.Id
+	return session.Create()
 }

@@ -1,7 +1,6 @@
 package support_test
 
 import (
-	"github.com/ande3577/go-bootstrap-vue-pg-jwt/auth"
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/model"
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/support"
 
@@ -11,6 +10,7 @@ import (
 
 var _ = Describe("Creating new user", func() {
 	var u *model.MockUser
+	var s *model.MockSession
 	var password string
 	var passwordConfirmation string
 
@@ -18,23 +18,33 @@ var _ = Describe("Creating new user", func() {
 		u = &model.MockUser{User: model.User{Login: "login", Email: "user@mail.com"}}
 		u.Login = "login"
 		u.Email = "user@mail.com"
+		u.Id = 12345
 		password = "password"
 		passwordConfirmation = "password"
+
+		s = &model.MockSession{}
 	})
 
 	Context("with valid user", func() {
 		It("should create a new user", func() {
-			err := support.CreateUser(u, password, passwordConfirmation)
-			Expect(err).To(BeNil())
-			Expect(u.Created).To(BeTrue())
+			By("creating the user", func() {
+				err := support.CreateUser(u, s, password, passwordConfirmation)
+				Expect(err).To(BeNil())
+				Expect(u.Created).To(BeTrue())
 
-			Expect(u.HashedPassword).ToNot(HaveLen(0))
+				Expect(u.HashedPassword).ToNot(HaveLen(0))
+			})
+
+			By("creating a session for the user", func() {
+				Expect(s.CreateCalled).To(BeTrue())
+				Expect(s.UserId).To(Equal(u.Id))
+			})
 		})
 	})
 
 	Context("with invalid user", func() {
 		AfterEach(func() {
-			err := support.CreateUser(u, password, passwordConfirmation)
+			err := support.CreateUser(u, s, password, passwordConfirmation)
 			Expect(err).To(HaveOccurred())
 			Expect(u.Created).To(BeFalse())
 		})
@@ -55,28 +65,5 @@ var _ = Describe("Creating new user", func() {
 		It("should return an error if confirmation does not match", func() {
 			passwordConfirmation = "different_password"
 		})
-	})
-})
-
-var _ = Describe("Logging in for a user", func() {
-	Context("user exists", func() {
-		var u *model.MockUser
-
-		BeforeEach(func() {
-			u = &model.MockUser{User: model.User{Login: "username", HashedPassword: auth.GenerateHashFromPassword("password"), Email: "user@mail.com"}}
-		})
-
-		It("should login", func() {
-			login, err := support.Login("username", "password", u)
-			Expect(err).To(BeNil())
-			Expect(login).To(Equal("username"))
-		})
-
-		It("should login by email", func() {
-			login, err := support.Login(u.Email, "password", u)
-			Expect(err).To(BeNil())
-			Expect(login).To(Equal("username"))
-		})
-
 	})
 })

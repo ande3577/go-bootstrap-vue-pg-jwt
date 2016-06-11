@@ -23,8 +23,13 @@ var _ = Describe("Auth", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(tokenData.UserId).To(Equal("user"))
 			Expect(tokenData.XsrfToken).ToNot(HaveLen(0))
-			_, err = auth.ParseToken(tokenData.TokenString, false, false)
+			Expect(tokenData.SessionIdentifier).ToNot(HaveLen(0))
+			tokenDataOut, err := auth.ParseToken(tokenData.TokenString, false, false)
 			Expect(err).ToNot(HaveOccurred())
+
+			Expect(tokenDataOut.UserId).To(Equal(tokenData.UserId))
+			Expect(tokenDataOut.XsrfToken).To(Equal(tokenData.XsrfToken))
+			Expect(tokenDataOut.SessionIdentifier).To(Equal(tokenData.SessionIdentifier))
 		})
 
 		It("should reject invalid tokens", func() {
@@ -44,6 +49,12 @@ var _ = Describe("Auth", func() {
 			Expect(err).ToNot(HaveOccurred())
 			_, err = auth.ParseToken(tokenData.TokenString, false, false)
 			Expect(err).To(HaveOccurred())
+		})
+
+		It("should not assign a session id if user id is blank", func() {
+			tokenData, err := auth.Login("", true, false)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(tokenData.SessionIdentifier).To(HaveLen(0))
 		})
 	})
 

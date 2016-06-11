@@ -15,7 +15,8 @@ var _ = Describe("Login", func() {
 
 		BeforeEach(func() {
 			logout()
-			err := support.CreateUser(u, "password", "password")
+			s := &model.MockSession{} // don't actually want to create a session here
+			err := support.CreateUser(u, s, "password", "password")
 			Expect(err).To(BeNil())
 		})
 
