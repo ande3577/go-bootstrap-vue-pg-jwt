@@ -2,7 +2,9 @@ package integration_test
 
 import (
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/app"
+	"github.com/ande3577/go-bootstrap-vue-pg-jwt/model"
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/routes"
+	"github.com/ande3577/go-bootstrap-vue-pg-jwt/support"
 
 	"flag"
 	. "github.com/onsi/ginkgo"
@@ -32,6 +34,7 @@ func TestIntegration(t *testing.T) {
 
 var agoutiDriver *agouti.WebDriver
 var page *agouti.Page
+var u *model.User
 
 func getCurrentlyLoggedInUser() string {
 	if page.Find("#current-user") != nil {
@@ -51,6 +54,18 @@ func logout() {
 	page.FindByButton("Logout").Click()
 	Eventually(page).Should(HaveURL("http://localhost:5000/"))
 	Eventually(page.FindByButton("Login")).Should(BeFound())
+}
+
+func createUser() *model.User {
+	var u *model.User = &model.User{Login: "user", Email: "user@mail.com"}
+	s := &model.MockSession{} // don't actually want to create a session here
+	err := support.CreateUser(u, s, "password", "password")
+	Expect(err).To(BeNil())
+	return u
+}
+
+func loginAsUser() {
+	loginAs("user", "password")
 }
 
 func loginAs(username string, password string) {
@@ -104,4 +119,9 @@ var _ = AfterSuite(func() {
 
 func HaveValue(expected string) types.GomegaMatcher {
 	return HaveAttribute("value", expected)
+}
+
+func ExpectErrorMessage() {
+	Eventually(page.Find("#failure-message")).Should(BeFound())
+	Eventually(page.Find("#failure-message")).Should(BeVisible())
 }

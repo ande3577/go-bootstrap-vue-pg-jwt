@@ -5,20 +5,13 @@
 {{ define "breadcrumbs" }}
 	<ol class="breadcrumb">
 		<li><a href="/">Home</a></li>
-		<li class="active">Register</li>
+		<li class="active">Account</li>
 	</ol>
 {{ end }}
 
 {{ define "content" }}
 
 	<form method="post" class="form-horizontal">
-		<div class="form-group">
-			<label for="id" class="col-sm-2 control-label">Login ID</label>
-			<div class="col-sm-10">
-				<input type="text" name="login" id='login' value="{{.Login}}"/>
-			</div>
-		</div>
-
 		{{ template "account_info_form" .}}
 
 		<div class="form-group">
@@ -37,7 +30,7 @@
 
 		<input type="hidden" name="xsrf-token" value="{{.Context.XSRFToken}}"/>
 
-		<button class="btn btn-default">Register</button>
+		<button class="btn btn-default">Submit</button>
 	</form>
 
 {{ end }}

@@ -22,7 +22,7 @@ func login(c *Context, login string, password string, fromHttp bool) (err error)
 	if tokenData, err := support.Login(login, password, fromHttp, settings.DevelopmentMode, &model.User{}, &model.Session{}); err != nil {
 		return err
 	} else {
-		c.Session.Values["token"] = tokenData.TokenString
+		addTokenToSession(tokenData, c)
 	}
 
 	return nil
@@ -56,7 +56,8 @@ func getRegisterTemplate() *template.Template {
 	registerTemplate, ok := getTemplateFromStore("register")
 	if !ok {
 		registerTemplate = template.Must(template.ParseFiles(filepath.Join(settings.RootDirectory, "templates/_base.html"),
-			filepath.Join(settings.RootDirectory, "templates/register.html")))
+			filepath.Join(settings.RootDirectory, "templates/register.html"),
+			filepath.Join(settings.RootDirectory, "templates/_account_info_form.html")))
 		addTemplateToStore("register", registerTemplate)
 	}
 	return registerTemplate

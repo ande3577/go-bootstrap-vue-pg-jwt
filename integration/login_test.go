@@ -2,7 +2,6 @@ package integration_test
 
 import (
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/model"
-	"github.com/ande3577/go-bootstrap-vue-pg-jwt/support"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,13 +10,11 @@ import (
 
 var _ = Describe("Login", func() {
 	Context("as unauthenticated user", func() {
-		var u *model.User = &model.User{Login: "user", Email: "user@mail.com"}
+		var u *model.User
 
 		BeforeEach(func() {
 			logout()
-			s := &model.MockSession{} // don't actually want to create a session here
-			err := support.CreateUser(u, s, "password", "password")
-			Expect(err).To(BeNil())
+			u = createUser()
 		})
 
 		AfterEach(func() {

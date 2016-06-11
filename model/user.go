@@ -14,16 +14,18 @@ type User struct {
 
 type UserInterface interface {
 	Create() error
+	Update() error
 	Destroy() error
 	Get() *User
 	FindByLogin(login string) error
+	DestroySessions() error
 }
 
 func (u *User) Create() error {
 	return dbMap.Insert(u)
 }
 
-func (u *User) destroySessions() error {
+func (u *User) DestroySessions() error {
 	var sessions []Session
 	if _, err := dbMap.Select(&sessions, "select id from sessions where user_id=$1", u.Id); err != nil {
 		return err
@@ -38,8 +40,13 @@ func (u *User) destroySessions() error {
 	return nil
 }
 
+func (u *User) Update() error {
+	_, err := dbMap.Update(u)
+	return err
+}
+
 func (u *User) Destroy() error {
-	if err := u.destroySessions(); err != nil {
+	if err := u.DestroySessions(); err != nil {
 		return err
 	}
 

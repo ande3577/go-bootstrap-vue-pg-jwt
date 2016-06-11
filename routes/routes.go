@@ -2,8 +2,10 @@ package routes
 
 import (
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/app"
+	"github.com/ande3577/go-bootstrap-vue-pg-jwt/auth"
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/model"
 
+	"errors"
 	"fmt"
 	"github.com/goods/httpbuf"
 	"github.com/gorilla/mux"
@@ -20,6 +22,12 @@ type jsonHandlerWithContext handlerWithContext
 
 func writeError(w http.ResponseWriter, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+func denyAccess(w http.ResponseWriter, r *http.Request, c *Context) {
+	c.Session.AddFlash(errors.New("access denied").Error())
+	logout(c)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (h jsonHandlerWithContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +95,10 @@ func buildTemplatePath(templateName string) string {
 	return filepath.Join(settings.RootDirectory, "templates", templateName)
 }
 
+func addTokenToSession(tokenData *auth.TokenData, c *Context) {
+	c.Session.Values["token"] = tokenData.TokenString
+}
+
 func SetupApplication(s *app.ApplicationSettings) chan int {
 	settings = s
 
@@ -114,6 +126,8 @@ func Initialize(root string) {
 	r.Handle("/logout", handlerWithContext(PostLogout)).Methods("POST")
 	r.Handle("/register", handlerWithContext(GetRegister)).Methods("GET")
 	r.Handle("/register", handlerWithContext(PostRegister)).Methods("POST")
+	r.Handle("/account", handlerWithContext(GetAccount)).Methods("GET")
+	r.Handle("/account", handlerWithContext(PostAccount)).Methods("POST")
 
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir(filepath.Join(root, "static")))).Methods("GET")
 	http.Handle("/", r)

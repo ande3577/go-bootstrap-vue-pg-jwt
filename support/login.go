@@ -7,6 +7,21 @@ import (
 	"errors"
 )
 
+func CreateUserSession(user model.UserInterface, sess model.SessionInterface, fromHttp bool, developmentMode bool) (tokenData *auth.TokenData, err error) {
+	u := user.Get()
+	if tokenData, err = auth.Login(u.Login, fromHttp, developmentMode); err != nil {
+		return tokenData, err
+	}
+
+	s := sess.Get()
+	s.UserId = u.Id
+	s.Session = tokenData.SessionIdentifier
+
+	err = sess.Create()
+
+	return tokenData, err
+}
+
 func Login(login string, password string, fromHttp bool, developmentMode bool, user model.UserInterface, sess model.SessionInterface) (tokenData *auth.TokenData, err error) {
 	if len(login) == 0 {
 		return tokenData, errors.New("user name cannot be blank")
@@ -25,16 +40,7 @@ func Login(login string, password string, fromHttp bool, developmentMode bool, u
 		return tokenData, errors.New("incorrect username or password")
 	}
 
-	if tokenData, err = auth.Login(u.Login, fromHttp, developmentMode); err != nil {
-		return tokenData, err
-	}
-
-	s := sess.Get()
-	s.UserId = u.Id
-	s.Session = tokenData.SessionIdentifier
-
-	err = sess.Create()
-
+	tokenData, err = CreateUserSession(user, sess, fromHttp, developmentMode)
 	return tokenData, err
 }
 

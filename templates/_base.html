@@ -29,7 +29,7 @@
 				<ul class="nav navbar-nav navbar-right">
 					{{ if .Context.User }}
 						<form class="inline" action="/logout" method="POST">				
-							<span id="current-user">{{ .Context.User }}</span>
+							<span id="current-user"><a href="/account">{{ .Context.User }}</a></span>
 							<input type="hidden" name="xsrf-token" value="{{.Context.XSRFToken}}"/>
 							<button class="btn btn-link">Logout</button>
 						</form>	

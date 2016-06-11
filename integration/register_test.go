@@ -51,7 +51,7 @@ var _ = Describe("Register", func() {
 			Expect(page.Find("#password-confirmation").Fill("different_password")).Should(Succeed())
 			Expect(page.FindByButton("Register").Click()).To(Succeed())
 			Eventually(page).Should(HaveURL("http://localhost:5000/register")) // redirect back to register
-			Eventually(page.First("#error-message")).Should(BeFound())
+			ExpectErrorMessage()
 			Expect(page.Find("#login")).To(HaveValue("user"))          // preserve login
 			Expect(page.Find("#email")).To(HaveValue("user@mail.com")) // preserve email
 		})
