@@ -97,6 +97,7 @@ func buildTemplatePath(templateName string) string {
 
 func addTokenToSession(tokenData *auth.TokenData, c *Context) {
 	c.Session.Values["token"] = tokenData.TokenString
+	c.Session.Values["refresh-token"] = tokenData.RefreshTokenString
 }
 
 func SetupApplication(s *app.ApplicationSettings) chan int {

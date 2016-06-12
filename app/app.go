@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/ande3577/go-bootstrap-vue-pg-jwt/auth"
+	"github.com/ande3577/go-bootstrap-vue-pg-jwt/model"
 
 	"bitbucket.org/liamstask/goose/lib/goose"
 	"database/sql"
@@ -25,7 +26,7 @@ func Initialize(settings *ApplicationSettings) {
 		panic("GO_TEMPLATE_JWT_KEY not defined")
 	}
 
-	auth.Initialize(cookieStoreAuthenticationKey, cookieStoreEncryptionKey, jwtSigningKeyString, "go_template_test")
+	auth.Initialize(&model.Session{}, cookieStoreAuthenticationKey, cookieStoreEncryptionKey, jwtSigningKeyString, "go_template_test")
 }
 
 func OpenDB(settings *ApplicationSettings) (db *sql.DB, err error) {
